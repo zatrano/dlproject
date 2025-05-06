@@ -68,3 +68,4 @@ func (r *UserRepository) GetUserCount() (int64, error) {
 }
 
 var _ IUserRepository = (*UserRepository)(nil)
+var _ IBaseRepository[models.User] = (*BaseRepository[models.User])(nil)
