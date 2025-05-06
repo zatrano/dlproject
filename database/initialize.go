@@ -99,6 +99,13 @@ func RunMigrationsInOrder(db *gorm.DB) error {
 	}
 	configslog.SLog.Info(" -> Invitation migrasyonları tamamlandı.")
 
+	configslog.SLog.Info(" -> Invitation RSVP migrasyonları çalıştırılıyor...")
+	if err := migrations.MigrateRSVPTable(db); err != nil {
+		configslog.Log.Error("Invitations tabloları migrasyonu başarısız oldu", zap.Error(err))
+		return err
+	}
+	configslog.SLog.Info(" -> Invitation RSVP migrasyonları tamamlandı.")
+
 	configslog.SLog.Info(" -> Appointment migrasyonları çalıştırılıyor...")
 	if err := migrations.MigrateAppointmentsTables(db); err != nil {
 		configslog.Log.Error("Appointments tabloları migrasyonu başarısız oldu", zap.Error(err))
