@@ -1,0 +1,51 @@
+<!--begin::Container-->
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title mb-0"><strong>{{.Title}}</strong></h3>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="/dashboard/users/create">
+            <input type="hidden" name="csrf_token" value="{{ .CsrfToken }}">
+            
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Ad Soyad</label>
+                <input type="text" class="form-control" name="name" 
+                       value="{{if .FormData}}{{.FormData.Name}}{{end}}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Hesap Adı</label>
+                <input type="text" class="form-control" name="account" 
+                       value="{{if .FormData}}{{.FormData.Account}}{{end}}" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Şifre</label>
+                <input type="password" class="form-control" name="password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Kullanıcı Tipi</label>
+                <select class="form-select" name="type" required>
+                  <option value="">Kullanıcı Tipi Seçin</option>
+                  <option value="dashboard" {{if and .FormData (eq .FormData.Type "dashboard")}}selected{{end}}>Yönetici</option>
+                  <option value="panel" {{if and .FormData (eq .FormData.Type "panel")}}selected{{end}}>Kullanıcı</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <a href="/dashboard/users" class="btn btn-secondary me-2">İptal</a>
+              <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--end::Container-->

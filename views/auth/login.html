@@ -1,0 +1,39 @@
+<div class="card-body login-card-body">
+  <p class="login-box-msg">Giriş Yap</p>
+
+  <form method="POST" action="/auth/login">
+    <input type="hidden" name="csrf_token" value="{{ .CsrfToken }}">
+    
+    <div class="input-group mb-3">
+      <div class="form-floating">
+        <input
+          id="account"
+          type="text"
+          name="account"
+          class="form-control"
+          placeholder="E-posta"
+          required
+        />
+        <label for="account">E-posta:</label>
+      </div>
+      <div class="input-group-text"><span class="bi bi-envelope"></span></div>
+    </div>
+    <div class="input-group mb-3">
+      <div class="form-floating">
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-control"
+          placeholder="Şifre"
+          required
+        />
+        <label for="password">Şifre:</label>
+      </div>
+      <div class="input-group-text"><span class="bi bi-lock-fill"></span></div>
+    </div>
+    <div class="d-grid gap-2">
+      <button type="submit" class="btn btn-primary btn-block">Giriş Yap</button>
+    </div>
+  </form>
+</div>

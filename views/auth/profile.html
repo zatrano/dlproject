@@ -1,0 +1,57 @@
+<div class="card-body login-card-body">
+  <p class="login-box-msg">Şifre Güncelleme</p>
+
+  <form method="POST" action="/auth/profile/update-password">
+    <input type="hidden" name="csrf_token" value="{{ .CsrfToken }}">
+    
+    <div class="input-group mb-3">
+      <div class="form-floating">
+        <input
+          type="password"
+          id="current_password"
+          name="current_password"
+          class="form-control"
+          placeholder="Mevcut Şifre"
+          required
+        />
+        <label for="current_password">Mevcut Şifre</label>
+      </div>
+      <div class="input-group-text"><span class="bi bi-lock-fill"></span></div>
+    </div>
+    <div class="input-group mb-3">
+      <div class="form-floating">
+        <input
+          type="password"
+          id="new_password"
+          name="new_password"
+          class="form-control"
+          placeholder="Yeni Şifre"
+          required
+          minlength="6"
+        />
+        <label for="new_password">Yeni Şifre (en az 6 karakter)</label>
+      </div>
+      <div class="input-group-text"><span class="bi bi-key-fill"></span></div>
+    </div>
+    <div class="input-group mb-3">
+      <div class="form-floating">
+        <input
+          type="password"
+          id="confirm_password"
+          name="confirm_password"
+          class="form-control"
+          placeholder="Yeni Şifre (Tekrar)"
+          required
+          minlength="6"
+        />
+        <label for="confirm_password">Yeni Şifre (Tekrar)</label>
+      </div>
+      <div class="input-group-text"><span class="bi bi-key-fill"></span></div>
+    </div>
+    <div class="row">
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary w-100">Şifreyi Güncelle</button>
+      </div>
+    </div>
+  </form>
+</div>
