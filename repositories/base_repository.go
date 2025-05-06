@@ -11,7 +11,14 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository[T any] interface {
+const userIDKey = "user_id"
+
+var (
+	ErrNotFound      = errors.New("kayıt bulunamadı")
+	ErrMissingUserID = errors.New("context içinde geçerli user_id yok")
+)
+
+type IBaseRepository[T any] interface {
 	GetAll(params queryparams.ListParams) ([]T, int64, error)
 	GetByID(id uint) (*T, error)
 	Create(ctx context.Context, entity *T) error
@@ -20,16 +27,16 @@ type Repository[T any] interface {
 	BulkUpdate(ctx context.Context, condition map[string]interface{}, data map[string]interface{}, updatedBy uint) error
 	Delete(ctx context.Context, id uint) error
 	BulkDelete(ctx context.Context, condition map[string]interface{}) error
-	GetCount(params queryparams.ListParams) (int64, error)
+	GetCount() (int64, error)
 }
 
-type GenericBaseRepository[T any] struct {
+type BaseRepository[T any] struct {
 	db                 *gorm.DB
 	allowedSortColumns map[string]bool
 }
 
-func NewBaseRepository[T any](db *gorm.DB) *GenericBaseRepository[T] {
-	return &GenericBaseRepository[T]{
+func NewBaseRepository[T any](db *gorm.DB) *BaseRepository[T] {
+	return &BaseRepository[T]{
 		db: db,
 		allowedSortColumns: map[string]bool{
 			"id":         true,
@@ -38,18 +45,19 @@ func NewBaseRepository[T any](db *gorm.DB) *GenericBaseRepository[T] {
 	}
 }
 
-func (r *GenericBaseRepository[T]) SetAllowedSortColumns(columns []string) {
+func (r *BaseRepository[T]) SetAllowedSortColumns(columns []string) {
 	r.allowedSortColumns = make(map[string]bool)
 	for _, col := range columns {
 		r.allowedSortColumns[col] = true
 	}
 }
 
-func (r *GenericBaseRepository[T]) GetAll(params queryparams.ListParams) ([]T, int64, error) {
+func (r *BaseRepository[T]) GetAll(params queryparams.ListParams) ([]T, int64, error) {
 	var results []T
 	var totalCount int64
 
-	query := r.db.Model(new(T))
+	var t T
+	query := r.db.Model(&t)
 
 	if params.Name != "" {
 		sqlFragment, args := turkishsearch.SQLFilter("name", params.Name)
@@ -87,54 +95,56 @@ func (r *GenericBaseRepository[T]) GetAll(params queryparams.ListParams) ([]T, i
 	return results, totalCount, err
 }
 
-func (r *GenericBaseRepository[T]) GetByID(id uint) (*T, error) {
+func (r *BaseRepository[T]) GetByID(id uint) (*T, error) {
 	var result T
 	err := r.db.First(&result, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, errors.New("kayıt bulunamadı")
+		return nil, ErrNotFound
 	}
 	return &result, err
 }
 
-func (r *GenericBaseRepository[T]) Create(ctx context.Context, entity *T) error {
+func (r *BaseRepository[T]) Create(ctx context.Context, entity *T) error {
 	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func (r *GenericBaseRepository[T]) BulkCreate(ctx context.Context, entities []T) error {
+func (r *BaseRepository[T]) BulkCreate(ctx context.Context, entities []T) error {
 	return r.db.WithContext(ctx).Create(&entities).Error
 }
 
-func (r *GenericBaseRepository[T]) Update(ctx context.Context, id uint, data map[string]interface{}, updatedBy uint) error {
+func (r *BaseRepository[T]) Update(ctx context.Context, id uint, data map[string]interface{}, updatedBy uint) error {
 	if updatedBy > 0 {
 		data["updated_by"] = updatedBy
 	}
-	result := r.db.WithContext(ctx).Model(new(T)).Where("id = ?", id).Updates(data)
+	var t T
+	result := r.db.WithContext(ctx).Model(&t).Where("id = ?", id).Updates(data)
 	if result.RowsAffected == 0 {
-		return errors.New("kayıt bulunamadı")
+		return ErrNotFound
 	}
 	return result.Error
 }
 
-func (r *GenericBaseRepository[T]) BulkUpdate(ctx context.Context, condition map[string]interface{}, data map[string]interface{}, updatedBy uint) error {
+func (r *BaseRepository[T]) BulkUpdate(ctx context.Context, condition map[string]interface{}, data map[string]interface{}, updatedBy uint) error {
 	if updatedBy > 0 {
 		data["updated_by"] = updatedBy
 	}
-	return r.db.WithContext(ctx).Model(new(T)).Where(condition).Updates(data).Error
+	var t T
+	return r.db.WithContext(ctx).Model(&t).Where(condition).Updates(data).Error
 }
 
-func (r *GenericBaseRepository[T]) Delete(ctx context.Context, id uint) error {
+func (r *BaseRepository[T]) Delete(ctx context.Context, id uint) error {
 	var entity T
 
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value(userIDKey).(uint)
 	if !ok || userID == 0 {
-		return errors.New("Delete: context içinde geçerli user_id yok")
+		return ErrMissingUserID
 	}
 
 	tx := r.db.WithContext(ctx)
 
 	if err := tx.First(&entity, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("kayıt bulunamadı")
+			return ErrNotFound
 		}
 		return err
 	}
@@ -146,12 +156,12 @@ func (r *GenericBaseRepository[T]) Delete(ctx context.Context, id uint) error {
 	return tx.Delete(&entity).Error
 }
 
-func (r *GenericBaseRepository[T]) BulkDelete(ctx context.Context, condition map[string]interface{}) error {
+func (r *BaseRepository[T]) BulkDelete(ctx context.Context, condition map[string]interface{}) error {
 	var entities []T
 
-	userID, ok := ctx.Value("user_id").(uint)
+	userID, ok := ctx.Value(userIDKey).(uint)
 	if !ok || userID == 0 {
-		return errors.New("BulkDelete: context içinde geçerli user_id yok")
+		return ErrMissingUserID
 	}
 
 	tx := r.db.WithContext(ctx)
@@ -172,11 +182,9 @@ func (r *GenericBaseRepository[T]) BulkDelete(ctx context.Context, condition map
 	return nil
 }
 
-func (r *GenericBaseRepository[T]) GetCount() (int64, error) {
+func (r *BaseRepository[T]) GetCount() (int64, error) {
 	var totalCount int64
-	err := r.db.Model(new(T)).Count(&totalCount).Error
-	if err != nil {
-		return 0, err
-	}
-	return totalCount, nil
+	var t T
+	err := r.db.Model(&t).Count(&totalCount).Error
+	return totalCount, err
 }
