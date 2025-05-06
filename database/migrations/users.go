@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"errors"
+
 	"davet.link/configs/configslog"
 	"davet.link/models"
 
